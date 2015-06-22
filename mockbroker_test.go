@@ -10,16 +10,20 @@ import (
 	"time"
 )
 
-// mockBroker is a mock Kafka broker. It consists of a TCP server on a kernel-selected localhost port that
-// accepts a single connection. It reads Kafka requests from that connection and returns each response
-// from the channel provided at creation-time (if a response has a len of 0, nothing is sent, if a response
-// the server sleeps for 250ms instead of reading a request).
+// mockBroker is a mock Kafka broker. It consists of a TCP server on a
+// kernel-selected localhost port that accepts a single connection. It
+// reads Kafka requests from that connection and returns each
+// response from the channel provided at creation-time (if a response
+// has a len of 0, nothing is sent, if a response the server sleeps
+// for 250ms instead of reading a request).
 //
-// When running tests with one of these, it is strongly recommended to specify a timeout to `go test` so that if the broker hangs
-// waiting for a response, the test panics.
+// When running tests with one of these, it is strongly recommended to
+// specify a timeout to `go test` so that if the broker hangs waiting
+// for a response, the test panics.
 //
-// It is not necessary to prefix message length or correlation ID to your response bytes, the server does that
-// automatically as a convenience.
+// It is not necessary to prefix message length or correlation ID to
+// your response bytes, the server does that automatically as a
+// convenience.
 type mockBroker struct {
 	brokerID     int32
 	port         int32
@@ -123,15 +127,16 @@ func (b *mockBroker) serverError(err error, conn net.Conn) bool {
 	return false
 }
 
-// newMockBroker launches a fake Kafka broker. It takes a *testing.T as provided by the
-// test framework and a channel of responses to use.  If an error occurs it is
-// simply logged to the *testing.T and the broker exits.
+// newMockBroker launches a fake Kafka broker. It takes a *testing.T
+// as provided by the test framework and a channel of responses to
+// use.  If an error occurs it is simply logged to the *testing.T and
+// the broker exits.
 func newMockBroker(t *testing.T, brokerID int32) *mockBroker {
 	return newMockBrokerAddr(t, brokerID, "localhost:0")
 }
 
-// newMockBrokerAddr behaves like newMockBroker but listens on the address you give
-// it rather than just some ephemeral port.
+// newMockBrokerAddr behaves like newMockBroker but listens on the
+// address you give it rather than just some ephemeral port.
 func newMockBrokerAddr(t *testing.T, brokerID int32, addr string) *mockBroker {
 	var err error
 

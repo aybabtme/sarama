@@ -72,7 +72,8 @@ func TestSimpleBrokerCommunication(t *testing.T) {
 	}
 }
 
-// We're not testing encoding/decoding here, so most of the requests/responses will be empty for simplicity's sake
+// We're not testing encoding/decoding here, so most of the
+// requests/responses will be empty for simplicity's sake
 var brokerTestTable = []struct {
 	response []byte
 	runner   func(*testing.T, *Broker)

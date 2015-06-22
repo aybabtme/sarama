@@ -11,6 +11,7 @@ type ConsumerMetadataResponse struct {
 	CoordinatorID   int32  // deprecated: use Coordinator.ID()
 	CoordinatorHost string // deprecated: use Coordinator.Addr()
 	CoordinatorPort int32  // deprecated: use Coordinator.Addr()
+
 }
 
 func (r *ConsumerMetadataResponse) decode(pd packetDecoder) (err error) {
@@ -25,8 +26,8 @@ func (r *ConsumerMetadataResponse) decode(pd packetDecoder) (err error) {
 		return err
 	}
 
-	// this can all go away in 2.0, but we have to fill in deprecated fields to maintain
-	// backwards compatibility
+	// this can all go away in 2.0, but we have to fill in deprecated
+	// fields to maintain backwards compatibility
 	host, portstr, err := net.SplitHostPort(r.Coordinator.Addr())
 	if err != nil {
 		return err

@@ -43,7 +43,8 @@ func withRecover(fn func()) {
 }
 
 func safeAsyncClose(b *Broker) {
-	tmp := b // local var prevents clobbering in goroutine
+	// local var prevents clobbering in goroutine
+	tmp := b
 	go withRecover(func() {
 		if connected, _ := tmp.Connected(); connected {
 			if err := tmp.Close(); err != nil {
@@ -53,19 +54,20 @@ func safeAsyncClose(b *Broker) {
 	})
 }
 
-// Encoder is a simple interface for any type that can be encoded as an array of bytes
-// in order to be sent as the key or value of a Kafka message. Length() is provided as an
-// optimization, and must return the same as len() on the result of Encode().
+// Encoder is a simple interface for any type that can be encoded as
+// an array of bytes in order to be sent as the key or value of a
+// Kafka message. Length() is provided as an optimization, and must
+// return the same as len() on the result of Encode().
 type Encoder interface {
 	Encode() ([]byte, error)
 	Length() int
 }
 
-// make strings and byte slices encodable for convenience so they can be used as keys
-// and/or values in kafka messages
+// make strings and byte slices encodable for convenience so they can
+// be used as keys and/or values in kafka messages
 
-// StringEncoder implements the Encoder interface for Go strings so that they can be used
-// as the Key or Value in a ProducerMessage.
+// StringEncoder implements the Encoder interface for Go strings so
+// that they can be used as the Key or Value in a ProducerMessage.
 type StringEncoder string
 
 func (s StringEncoder) Encode() ([]byte, error) {
@@ -76,8 +78,8 @@ func (s StringEncoder) Length() int {
 	return len(s)
 }
 
-// ByteEncoder implements the Encoder interface for Go byte slices so that they can be used
-// as the Key or Value in a ProducerMessage.
+// ByteEncoder implements the Encoder interface for Go byte slices so
+// that they can be used as the Key or Value in a ProducerMessage.
 type ByteEncoder []byte
 
 func (b ByteEncoder) Encode() ([]byte, error) {

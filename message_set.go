@@ -46,7 +46,9 @@ func (msb *MessageBlock) decode(pd packetDecoder) (err error) {
 }
 
 type MessageSet struct {
-	PartialTrailingMessage bool // whether the set on the wire contained an incomplete trailing MessageBlock
+	// whether the set on the wire contained an incomplete trailing
+	// MessageBlock
+	PartialTrailingMessage bool
 	Messages               []*MessageBlock
 }
 
@@ -70,8 +72,9 @@ func (ms *MessageSet) decode(pd packetDecoder) (err error) {
 		case nil:
 			ms.Messages = append(ms.Messages, msb)
 		case ErrInsufficientData:
-			// As an optimization the server is allowed to return a partial message at the
-			// end of the message set. Clients should handle this case. So we just ignore such things.
+			// As an optimization the server is allowed to return a
+			// partial message at the end of the message set. Clients
+			// should handle this case. So we just ignore such things.
 			ms.PartialTrailingMessage = true
 			return nil
 		default:

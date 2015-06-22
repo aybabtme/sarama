@@ -7,7 +7,8 @@ import (
 	"io/ioutil"
 )
 
-// CompressionCodec represents the various compression codecs recognized by Kafka in messages.
+// CompressionCodec represents the various compression codecs
+// recognized by Kafka in messages.
 type CompressionCodec int8
 
 // only the last two bits are really used
@@ -19,15 +20,17 @@ const (
 	CompressionSnappy CompressionCodec = 2
 )
 
-// The spec just says: "This is a version id used to allow backwards compatible evolution of the message
-// binary format." but it doesn't say what the current value is, so presumably 0...
+// The spec just says: "This is a version id used to allow backwards
+// compatible evolution of the message binary format." but it doesn't
+// say what the current value is, so presumably 0...
 const messageFormat int8 = 0
 
 type Message struct {
-	Codec CompressionCodec // codec used to compress the message contents
-	Key   []byte           // the message key, may be nil
-	Value []byte           // the message contents
-	Set   *MessageSet      // the message set a message might wrap
+	// codec used to compress the message contents
+	Codec CompressionCodec
+	Key   []byte      // the message key, may be nil
+	Value []byte      // the message contents
+	Set   *MessageSet // the message set a message might wrap
 
 	compressedCache []byte
 }

@@ -10,40 +10,48 @@ import (
 )
 
 func forceFlushThreshold() int {
-	return int(MaxRequestSize - (10 * 1024)) // 10KiB is safety room for misc. overhead, we might want to calculate this more precisely?
+	// 10KiB is safety room for misc. overhead, we might want to
+	// calculate this more precisely?
+	return int(MaxRequestSize - (10 * 1024))
 }
 
-// AsyncProducer publishes Kafka messages using a non-blocking API. It routes messages
-// to the correct broker for the provided topic-partition, refreshing metadata as appropriate,
-// and parses responses for errors. You must read from the Errors() channel or the
-// producer will deadlock. You must call Close() or AsyncClose() on a producer to avoid
-// leaks: it will not be garbage-collected automatically when it passes out of
-// scope.
+// AsyncProducer publishes Kafka messages using a non-blocking API. It
+// routes messages to the correct broker for the provided
+// topic-partition, refreshing metadata as appropriate, and parses
+// responses for errors. You must read from the Errors() channel or
+// the producer will deadlock. You must call Close() or AsyncClose()
+// on a producer to avoid leaks: it will not be garbage-collected
+// automatically when it passes out of scope.
 type AsyncProducer interface {
 
-	// AsyncClose triggers a shutdown of the producer, flushing any messages it may have
-	// buffered. The shutdown has completed when both the Errors and Successes channels
-	// have been closed. When calling AsyncClose, you *must* continue to read from those
+	// AsyncClose triggers a shutdown of the producer, flushing any
+	// messages it may have buffered. The shutdown has completed when
+	// both the Errors and Successes channels have been closed. When
+	// calling AsyncClose, you *must* continue to read from those
 	// channels in order to drain the results of any messages in flight.
 	AsyncClose()
 
-	// Close shuts down the producer and flushes any messages it may have buffered.
-	// You must call this function before a producer object passes out of scope, as
-	// it may otherwise leak memory. You must call this before calling Close on the
-	// underlying client.
+	// Close shuts down the producer and flushes any messages it may have
+	// buffered. You must call this function before a producer object
+	// passes out of scope, as it may otherwise leak memory. You must
+	// call this before calling Close on the underlying client.
 	Close() error
 
-	// Input is the input channel for the user to write messages to that they wish to send.
+	// Input is the input channel for the user to write messages to that
+	// they wish to send.
 	Input() chan<- *ProducerMessage
 
-	// Successes is the success output channel back to the user when AckSuccesses is enabled.
-	// If Return.Successes is true, you MUST read from this channel or the Producer will deadlock.
-	// It is suggested that you send and read messages together in a single select statement.
+	// Successes is the success output channel back to the user when
+	// AckSuccesses is enabled. If Return.Successes is true, you MUST
+	// read from this channel or the Producer will deadlock. It is
+	// suggested that you send and read messages together in a single
+	// select statement.
 	Successes() <-chan *ProducerMessage
 
-	// Errors is the error output channel back to the user. You MUST read from this channel
-	// or the Producer will deadlock when the channel is full. Alternatively, you can set
-	// Producer.Return.Errors in your config to false, which prevents errors to be returned.
+	// Errors is the error output channel back to the user. You MUST read
+	// from this channel or the Producer will deadlock when the channel
+	// is full. Alternatively, you can set Producer.Return.Errors in
+	// your config to false, which prevents errors to be returned.
 	Errors() <-chan *ProducerError
 }
 
@@ -61,7 +69,8 @@ type asyncProducer struct {
 	brokerLock sync.Mutex
 }
 
-// NewAsyncProducer creates a new AsyncProducer using the given broker addresses and configuration.
+// NewAsyncProducer creates a new AsyncProducer using the given broker
+// addresses and configuration.
 func NewAsyncProducer(addrs []string, conf *Config) (AsyncProducer, error) {
 	client, err := NewClient(addrs, conf)
 	if err != nil {
@@ -76,10 +85,12 @@ func NewAsyncProducer(addrs []string, conf *Config) (AsyncProducer, error) {
 	return p, nil
 }
 
-// NewAsyncProducerFromClient creates a new Producer using the given client. It is still
-// necessary to call Close() on the underlying client when shutting down this producer.
+// NewAsyncProducerFromClient creates a new Producer using the given
+// client. It is still necessary to call Close() on the underlying
+// client when shutting down this producer.
 func NewAsyncProducerFromClient(client Client) (AsyncProducer, error) {
-	// Check that we are not dealing with a closed Client before processing any other arguments
+	// Check that we are not dealing with a closed Client before
+	// processing any other arguments
 	if client.Closed() {
 		return nil, ErrClosedClient
 	}
@@ -105,28 +116,49 @@ func NewAsyncProducerFromClient(client Client) (AsyncProducer, error) {
 type flagSet int8
 
 const (
-	chaser   flagSet = 1 << iota // message is last in a group that failed
-	shutdown                     // start the shutdown process
+	// message is last in a group that failed
+	chaser   flagSet = 1 << iota
+	shutdown         // start the shutdown process
+
 )
 
-// ProducerMessage is the collection of elements passed to the Producer in order to send a message.
+// ProducerMessage is the collection of elements passed to the
+// Producer in order to send a message.
 type ProducerMessage struct {
-	Topic string  // The Kafka topic for this message.
-	Key   Encoder // The partitioning key for this message. It must implement the Encoder interface. Pre-existing Encoders include StringEncoder and ByteEncoder.
-	Value Encoder // The actual message to store in Kafka. It must implement the Encoder interface. Pre-existing Encoders include StringEncoder and ByteEncoder.
+	// The Kafka topic for this message.
+	Topic string
+	// The partitioning key for this message. It must implement the
+	// Encoder interface. Pre-existing Encoders include StringEncoder and
+	// ByteEncoder.
+	Key Encoder
+	// The actual message to store in Kafka. It must implement the
+	// Encoder interface. Pre-existing Encoders include StringEncoder and
+	// ByteEncoder.
+	Value Encoder
 
 	// These are filled in by the producer as the message is processed
-	Offset    int64 // Offset is the offset of the message stored on the broker. This is only guaranteed to be defined if the message was successfully delivered and RequiredAcks is not NoResponse.
-	Partition int32 // Partition is the partition that the message was sent to. This is only guaranteed to be defined if the message was successfully delivered.
+	// Offset is the offset of the message stored on the broker. This is
+	// only guaranteed to be defined if the message was successfully
+	// delivered and RequiredAcks is not NoResponse.
+	Offset int64
+	// Partition is the partition that the message was sent to. This is
+	// only guaranteed to be defined if the message was successfully
+	// delivered.
+	Partition int32
 
-	Metadata interface{} // This field is used to hold arbitrary data you wish to include so it will be available when receiving on the Successes and Errors channels.  Sarama completely ignores this field and is only to be used for pass-through data.
+	// This field is used to hold arbitrary data you wish to include so
+	// it will be available when receiving on the Successes and Errors
+	// channels.  Sarama completely ignores this field and is only to be
+	// used for pass-through data.
+	Metadata interface{}
 
 	retries int
 	flags   flagSet
 }
 
 func (m *ProducerMessage) byteSize() int {
-	size := 26 // the metadata overhead of CRC, flags, etc.
+	// the metadata overhead of CRC, flags, etc.
+	size := 26
 	if m.Key != nil {
 		size += m.Key.Length()
 	}
@@ -141,8 +173,9 @@ func (m *ProducerMessage) clear() {
 	m.retries = 0
 }
 
-// ProducerError is the type of error generated when the producer fails to deliver a message.
-// It contains the original ProducerMessage as well as the actual error value.
+// ProducerError is the type of error generated when the producer
+// fails to deliver a message. It contains the original
+// ProducerMessage as well as the actual error value.
 type ProducerError struct {
 	Msg *ProducerMessage
 	Err error
@@ -152,9 +185,10 @@ func (pe ProducerError) Error() string {
 	return fmt.Sprintf("kafka: Failed to produce message to topic %s: %s", pe.Msg.Topic, pe.Err)
 }
 
-// ProducerErrors is a type that wraps a batch of "ProducerError"s and implements the Error interface.
-// It can be returned from the Producer's Close method to avoid the need to manually drain the Errors channel
-// when closing a producer.
+// ProducerErrors is a type that wraps a batch of "ProducerError"s and
+// implements the Error interface. It can be returned from the
+// Producer's Close method to avoid the need to manually drain the
+// Errors channel when closing a producer.
 type ProducerErrors []*ProducerError
 
 func (pe ProducerErrors) Error() string {
@@ -201,10 +235,12 @@ func (p *asyncProducer) AsyncClose() {
 }
 
 ///////////////////////////////////////////
-// In normal processing, a message flows through the following functions from top to bottom,
-// starting at topicDispatcher (which reads from Producer.input) and ending in flusher
-// (which sends the message to the broker). In cases where a message must be retried, it goes
-// through retryHandler before being returned to the top of the flow.
+// In normal processing, a message flows through the following
+// functions from top to bottom, starting at topicDispatcher (which
+// reads from Producer.input) and ending in flusher (which sends the
+// message to the broker). In cases where a message must be retried,
+// it goes through retryHandler before being returned to the top of
+// the flow.
 ///////////////////////////////////////////
 
 // singleton
@@ -225,8 +261,9 @@ func (p *asyncProducer) topicDispatcher() {
 			continue
 		} else if msg.retries == 0 {
 			if shuttingDown {
-				// we can't just call returnError here because that decrements the wait group,
-				// which hasn't been incremented yet for this message, and shouldn't be
+				// we can't just call returnError here because that
+				// decrements the wait group, which hasn't been
+				// incremented yet for this message, and shouldn't be
 				pErr := &ProducerError{Msg: msg, Err: ErrShuttingDown}
 				if p.conf.Producer.Return.Errors {
 					p.errors <- pErr
@@ -248,7 +285,8 @@ func (p *asyncProducer) topicDispatcher() {
 		handler := handlers[msg.Topic]
 		if handler == nil {
 			newHandler := make(chan *ProducerMessage, p.conf.ChannelBufferSize)
-			topic := msg.Topic // block local because go's closure semantics suck
+			// block local because go's closure semantics suck
+			topic := msg.Topic
 			go withRecover(func() { p.partitionDispatcher(topic, newHandler) })
 			handler = newHandler
 			handlers[msg.Topic] = handler
@@ -280,8 +318,10 @@ func (p *asyncProducer) partitionDispatcher(topic string, input <-chan *Producer
 		handler := handlers[msg.Partition]
 		if handler == nil {
 			newHandler := make(chan *ProducerMessage, p.conf.ChannelBufferSize)
-			topic := msg.Topic         // block local because go's closure semantics suck
-			partition := msg.Partition // block local because go's closure semantics suck
+			// block local because go's closure semantics suck
+			topic := msg.Topic
+			// block local because go's closure semantics suck
+			partition := msg.Partition
 			go withRecover(func() { p.leaderDispatcher(topic, partition, newHandler) })
 			handler = newHandler
 			handlers[msg.Partition] = handler
@@ -316,17 +356,19 @@ func (p *asyncProducer) leaderDispatcher(topic string, partition int32, input <-
 		return nil
 	}
 
-	// try to prefetch the leader; if this doesn't work, we'll do a proper breaker-protected refresh-and-fetch
-	// on the first message
+	// try to prefetch the leader; if this doesn't work, we'll do a
+	// proper breaker-protected refresh-and-fetch on the first message
 	leader, _ = p.client.Leader(topic, partition)
 	if leader != nil {
 		output = p.getBrokerProducer(leader)
 	}
 
-	// highWatermark tracks the "current" retry level, which is the only one where we actually let messages through,
-	// all other messages get buffered in retryState[msg.retries].buf to preserve ordering
-	// retryState[msg.retries].expectChaser simply tracks whether we've seen a chaser message for a given level (and
-	// therefore whether our buffer is complete and safe to flush)
+	// highWatermark tracks the "current" retry level, which is the only
+	// one where we actually let messages through, all other messages
+	// get buffered in retryState[msg.retries].buf to preserve ordering
+	// retryState[msg.retries].expectChaser simply tracks whether we've
+	// seen a chaser message for a given level (and therefore whether
+	// our buffer is complete and safe to flush)
 	highWatermark := 0
 	retryState := make([]struct {
 		buf          []*ProducerMessage
@@ -335,31 +377,40 @@ func (p *asyncProducer) leaderDispatcher(topic string, partition int32, input <-
 
 	for msg := range input {
 		if msg.retries > highWatermark {
-			// new, higher, retry level; send off a chaser so that we know when everything "in between" has made it
-			// back to us and we can safely flush the backlog (otherwise we risk re-ordering messages)
+			// new, higher, retry level; send off a chaser so that we
+			// know when everything "in between" has made it back to us
+			// and we can safely flush the backlog (otherwise we risk
+			// re-ordering messages)
 			highWatermark = msg.retries
 			Logger.Printf("producer/leader/%s/%d state change to [retrying-%d]\n", topic, partition, highWatermark)
 			retryState[msg.retries].expectChaser = true
-			p.inFlight.Add(1) // we're generating a chaser message; track it so we don't shut down while it's still inflight
+			// we're generating a chaser message; track it so we don't shut
+			// down while it's still inflight
+			p.inFlight.Add(1)
 			output <- &ProducerMessage{Topic: topic, Partition: partition, flags: chaser, retries: msg.retries - 1}
 			Logger.Printf("producer/leader/%s/%d abandoning broker %d\n", topic, partition, leader.ID())
 			p.unrefBrokerProducer(leader, output)
 			output = nil
 			time.Sleep(p.conf.Producer.Retry.Backoff)
 		} else if highWatermark > 0 {
-			// we are retrying something (else highWatermark would be 0) but this message is not a *new* retry level
+			// we are retrying something (else highWatermark would be 0) but
+			// this message is not a *new* retry level
 			if msg.retries < highWatermark {
-				// in fact this message is not even the current retry level, so buffer it for now (unless it's a just a chaser)
+				// in fact this message is not even the current retry level, so
+				// buffer it for now (unless it's a just a chaser)
 				if msg.flags&chaser == chaser {
 					retryState[msg.retries].expectChaser = false
-					p.inFlight.Done() // this chaser is now handled and will be garbage collected
+					// this chaser is now handled and will be garbage collected
+					p.inFlight.Done()
 				} else {
 					retryState[msg.retries].buf = append(retryState[msg.retries].buf, msg)
 				}
 				continue
 			} else if msg.flags&chaser == chaser {
-				// this message is of the current retry level (msg.retries == highWatermark) and the chaser flag is set,
-				// meaning this retry level is done and we can go down (at least) one level and flush that
+				// this message is of the current retry level (msg.retries ==
+				// highWatermark) and the chaser flag is set, meaning this
+				// retry level is done and we can go down (at least) one
+				// level and flush that
 				retryState[highWatermark].expectChaser = false
 				Logger.Printf("producer/leader/%s/%d state change to [flushing-%d]\n", topic, partition, highWatermark)
 				for {
@@ -390,14 +441,15 @@ func (p *asyncProducer) leaderDispatcher(topic string, partition int32, input <-
 					}
 
 				}
-				p.inFlight.Done() // this chaser is now handled and will be garbage collected
+				// this chaser is now handled and will be garbage collected
+				p.inFlight.Done()
 				continue
 			}
 		}
 
-		// if we made it this far then the current msg contains real data, and can be sent to the next goroutine
-		// without breaking any of our ordering guarantees
-
+		// if we made it this far then the current msg contains real data,
+		// and can be sent to the next goroutine without breaking any
+		// of our ordering guarantees
 		if output == nil {
 			if err := breaker.Run(doUpdate); err != nil {
 				p.returnError(msg, err)
@@ -416,8 +468,9 @@ func (p *asyncProducer) leaderDispatcher(topic string, partition int32, input <-
 }
 
 // one per broker
-// groups messages together into appropriately-sized batches for sending to the broker
-// based on https://godoc.org/github.com/eapache/channels#BatchingChannel
+// groups messages together into appropriately-sized batches for
+// sending to the broker based on
+// https://godoc.org/github.com/eapache/channels#BatchingChannel
 func (p *asyncProducer) messageAggregator(broker *Broker, input <-chan *ProducerMessage) {
 	var (
 		timer            <-chan time.Time
@@ -481,7 +534,8 @@ shutdown:
 }
 
 // one per broker
-// takes a batch at a time from the messageAggregator and sends to the broker
+// takes a batch at a time from the messageAggregator and sends to the
+// broker
 func (p *asyncProducer) flusher(broker *Broker, input <-chan []*ProducerMessage) {
 	var closing error
 	currentRetries := make(map[string]map[int32]error)
@@ -504,7 +558,8 @@ func (p *asyncProducer) flusher(broker *Broker, input <-chan []*ProducerMessage)
 					currentRetries[msg.Topic][msg.Partition] = nil
 				}
 				p.retryMessages([]*ProducerMessage{msg}, currentRetries[msg.Topic][msg.Partition])
-				batch[i] = nil // to prevent it being returned/retried twice
+				// to prevent it being returned/retried twice
+				batch[i] = nil
 				continue
 			}
 
@@ -540,13 +595,15 @@ func (p *asyncProducer) flusher(broker *Broker, input <-chan []*ProducerMessage)
 		}
 
 		if response == nil {
-			// this only happens when RequiredAcks is NoResponse, so we have to assume success
+			// this only happens when RequiredAcks is NoResponse, so we have to
+			// assume success
 			p.returnSuccesses(batch)
 			continue
 		}
 
-		// we iterate through the blocks in the request, not the response, so that we notice
-		// if the response is missing a block completely
+		// we iterate through the blocks in the request, not the response,
+		// so that we notice if the response is missing a block
+		// completely
 		for topic, partitionSet := range msgSets {
 			for partition, msgs := range partitionSet {
 
@@ -558,7 +615,8 @@ func (p *asyncProducer) flusher(broker *Broker, input <-chan []*ProducerMessage)
 
 				switch block.Err {
 				case ErrNoError:
-					// All the messages for this topic-partition were delivered successfully!
+					// All the messages for this topic-partition were delivered
+					// successfully!
 					for i := range msgs {
 						msgs[i].Offset = block.Offset + int64(i)
 					}
@@ -582,8 +640,9 @@ func (p *asyncProducer) flusher(broker *Broker, input <-chan []*ProducerMessage)
 }
 
 // singleton
-// effectively a "bridge" between the flushers and the topicDispatcher in order to avoid deadlock
-// based on https://godoc.org/github.com/eapache/channels#InfiniteChannel
+// effectively a "bridge" between the flushers and the topicDispatcher
+// in order to avoid deadlock based on
+// https://godoc.org/github.com/eapache/channels#InfiniteChannel
 func (p *asyncProducer) retryHandler() {
 	var msg *ProducerMessage
 	buf := queue.New()
@@ -694,11 +753,13 @@ func (p *asyncProducer) buildRequest(batch map[string]map[int32][]*ProducerMessa
 				}
 
 				if p.conf.Producer.Compression != CompressionNone && setSize+msg.byteSize() > p.conf.Producer.MaxMessageBytes {
-					// compression causes message-sets to be wrapped as single messages, which have tighter
+					// compression causes message-sets to be wrapped as single
+					// messages, which have tighter
 					// size requirements, so we have to respect those limits
 					valBytes, err := encode(setToSend)
 					if err != nil {
-						Logger.Println(err) // if this happens, it's basically our fault.
+						// if this happens, it's basically our fault.
+						Logger.Println(err)
 						panic(err)
 					}
 					req.AddMessage(topic, partition, &Message{Codec: p.conf.Producer.Compression, Key: nil, Value: valBytes})
@@ -716,7 +777,8 @@ func (p *asyncProducer) buildRequest(batch map[string]map[int32][]*ProducerMessa
 			} else {
 				valBytes, err := encode(setToSend)
 				if err != nil {
-					Logger.Println(err) // if this happens, it's basically our fault.
+					// if this happens, it's basically our fault.
+					Logger.Println(err)
 					panic(err)
 				}
 				req.AddMessage(topic, partition, &Message{Codec: p.conf.Producer.Compression, Key: nil, Value: valBytes})

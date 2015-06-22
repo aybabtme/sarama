@@ -35,8 +35,9 @@ func TestRequest(t *testing.T) {
 	testEncodable(t, "simple", &request, requestSimple)
 }
 
-// not specific to request tests, just helper functions for testing structures that
-// implement the encoder or decoder interfaces that needed somewhere to live
+// not specific to request tests, just helper functions for testing
+// structures that implement the encoder or decoder interfaces that
+// needed somewhere to live
 
 func testEncodable(t *testing.T, name string, in encoder, expect []byte) {
 	packet, err := encode(in)

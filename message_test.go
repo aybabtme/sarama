@@ -11,7 +11,7 @@ var (
 		0xFF, 0xFF, 0xFF, 0xFF} // value
 
 	emptyGzipMessage = []byte{
-		97, 79, 149, 90, //CRC
+		97, 79, 149, 90, // CRC
 		0x00,                   // magic version byte
 		0x01,                   // attribute flags
 		0xFF, 0xFF, 0xFF, 0xFF, // key
@@ -22,7 +22,7 @@ var (
 		0, 0, 9, 110, 136, 0, 255, 1, 0, 0, 255, 255, 0, 0, 0, 0, 0, 0, 0, 0}
 
 	emptyBulkSnappyMessage = []byte{
-		180, 47, 53, 209, //CRC
+		180, 47, 53, 209, // CRC
 		0x00,                   // magic version byte
 		0x02,                   // attribute flags
 		0xFF, 0xFF, 0xFF, 0xFF, // key
@@ -33,7 +33,7 @@ var (
 		0, 0, 0, 22, 52, 0, 0, 25, 1, 16, 14, 227, 138, 104, 118, 25, 15, 13, 1, 8, 1, 0, 0, 62, 26, 0}
 
 	emptyBulkGzipMessage = []byte{
-		139, 160, 63, 141, //CRC
+		139, 160, 63, 141, // CRC
 		0x00,                   // magic version byte
 		0x01,                   // attribute flags
 		0xFF, 0xFF, 0xFF, 0xFF, // key

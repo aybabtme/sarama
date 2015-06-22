@@ -96,8 +96,9 @@ func (s *Server) collectQueryStringData() http.Handler {
 			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Failed to store your data:, %s", err)
 		} else {
-			// The tuple (topic, partition, offset) can be used as a unique identifier
-			// for a message in a Kafka cluster.
+			// The tuple (topic, partition, offset) can be used as a unique
+			// identifier for a message in a Kafka cluster.
+
 			fmt.Fprintf(w, "Your data is stored with unique identifier important/%d/%d", partition, offset)
 		}
 	})
@@ -148,6 +149,7 @@ func (s *Server) withAccessLog(next http.Handler) http.Handler {
 		// We will use the client's IP address as key. This will cause
 		// all the access log entries of the same IP address to end up
 		// on the same partition.
+
 		s.AccessLogProducer.Input() <- &sarama.ProducerMessage{
 			Topic: "access_log",
 			Key:   sarama.StringEncoder(r.RemoteAddr),
@@ -158,18 +160,21 @@ func (s *Server) withAccessLog(next http.Handler) http.Handler {
 
 func newDataCollector(brokerList []string) sarama.SyncProducer {
 
-	// For the data collector, we are looking for strong consistency semantics.
-	// Because we don't change the flush settings, sarama will try to produce messages
-	// as fast as possible to keep latency low.
-	config := sarama.NewConfig()
-	config.Producer.RequiredAcks = sarama.WaitForAll // Wait for all in-sync replicas to ack the message
-	config.Producer.Retry.Max = 10                   // Retry up to 10 times to produce the message
+	// For the data collector, we are looking for strong consistency
+	// semantics. Because we don't change the flush settings, sarama
+	// will try to produce messages as fast as possible to keep latency
+	// low.
 
-	// On the broker side, you may want to change the following settings to get
-	// stronger consistency guarantees:
+	config := sarama.NewConfig()
+	// Wait for all in-sync replicas to ack the message
+	config.Producer.RequiredAcks = sarama.WaitForAll
+	// Retry up to 10 times to produce the message
+	config.Producer.Retry.Max = 10
+
+	// On the broker side, you may want to change the following settings
+	// to get stronger consistency guarantees:
 	// - For your broker, set `unclean.leader.election.enable` to false
 	// - For the topic, you could increase `min.insync.replicas`.
-
 	producer, err := sarama.NewSyncProducer(brokerList, config)
 	if err != nil {
 		log.Fatalln("Failed to start Sarama producer:", err)
@@ -180,12 +185,16 @@ func newDataCollector(brokerList []string) sarama.SyncProducer {
 
 func newAccessLogProducer(brokerList []string) sarama.AsyncProducer {
 
-	// For the access log, we are looking for AP semantics, with high throughput.
-	// By creating batches of compressed messages, we reduce network I/O at a cost of more latency.
+	// For the access log, we are looking for AP semantics, with high
+	// throughput. By creating batches of compressed messages, we reduce
+	// network I/O at a cost of more latency.
 	config := sarama.NewConfig()
-	config.Producer.RequiredAcks = sarama.WaitForLocal       // Only wait for the leader to ack
-	config.Producer.Compression = sarama.CompressionSnappy   // Compress messages
-	config.Producer.Flush.Frequency = 500 * time.Millisecond // Flush batches every 500ms
+	// Only wait for the leader to ack
+	config.Producer.RequiredAcks = sarama.WaitForLocal
+	// Compress messages
+	config.Producer.Compression = sarama.CompressionSnappy
+	// Flush batches every 500ms
+	config.Producer.Flush.Frequency = 500 * time.Millisecond
 
 	producer, err := sarama.NewAsyncProducer(brokerList, config)
 	if err != nil {
@@ -193,7 +202,8 @@ func newAccessLogProducer(brokerList []string) sarama.AsyncProducer {
 	}
 
 	// We will just log to STDOUT if we're not able to produce messages.
-	// Note: messages will only be returned here after all retry attempts are exhausted.
+	// Note: messages will only be returned here after all retry attempts
+	// are exhausted.
 	go func() {
 		for err := range producer.Errors() {
 			log.Println("Failed to write access log entry:", err)

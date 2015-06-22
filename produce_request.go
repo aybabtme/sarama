@@ -1,16 +1,19 @@
 package sarama
 
-// RequiredAcks is used in Produce Requests to tell the broker how many replica acknowledgements
-// it must see before responding. Any of the constants defined here are valid. On broker versions
-// prior to 0.8.2.0 any other positive int16 is also valid (the broker will wait for that many
-// acknowledgements) but in 0.8.2.0 and later this will raise an exception (it has been replaced
-// by setting the `min.isr` value in the brokers configuration).
+// RequiredAcks is used in Produce Requests to tell the broker how
+// many replica acknowledgements it must see before responding. Any of
+// the constants defined here are valid. On broker versions prior to
+// 0.8.2.0 any other positive int16 is also valid (the broker will
+// wait for that many acknowledgements) but in 0.8.2.0 and later this
+// will raise an exception (it has been replaced by setting the
+// `min.isr` value in the brokers configuration).
 type RequiredAcks int16
 
 const (
 	// NoResponse doesn't send any response, the TCP ACK is all you get.
 	NoResponse RequiredAcks = 0
-	// WaitForLocal waits for only the local commit to succeed before responding.
+	// WaitForLocal waits for only the local commit to succeed before
+	// responding.
 	WaitForLocal RequiredAcks = 1
 	// WaitForAll waits for all replicas to commit before responding.
 	WaitForAll RequiredAcks = -1

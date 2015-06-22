@@ -10,7 +10,8 @@ import (
 	"time"
 )
 
-// Broker represents a single Kafka broker connection. All operations on this object are entirely concurrency-safe.
+// Broker represents a single Kafka broker connection. All operations
+// on this object are entirely concurrency-safe.
 type Broker struct {
 	id   int32
 	addr string
@@ -32,17 +33,21 @@ type responsePromise struct {
 	errors        chan error
 }
 
-// NewBroker creates and returns a Broker targetting the given host:port address.
-// This does not attempt to actually connect, you have to call Open() for that.
+// NewBroker creates and returns a Broker targetting the given
+// host:port address. This does not attempt to actually connect, you
+// have to call Open() for that.
 func NewBroker(addr string) *Broker {
 	return &Broker{id: -1, addr: addr}
 }
 
-// Open tries to connect to the Broker if it is not already connected or connecting, but does not block
-// waiting for the connection to complete. This means that any subsequent operations on the broker will
-// block waiting for the connection to succeed or fail. To get the effect of a fully synchronous Open call,
-// follow it by a call to Connected(). The only errors Open will return directly are ConfigurationError or
-// AlreadyConnected. If conf is nil, the result of NewConfig() is used.
+// Open tries to connect to the Broker if it is not already connected
+// or connecting, but does not block waiting for the connection to
+// complete. This means that any subsequent operations on the broker
+// will block waiting for the connection to succeed or fail. To get
+// the effect of a fully synchronous Open call, follow it by a call to
+// Connected(). The only errors Open will return directly are
+// ConfigurationError or AlreadyConnected. If conf is nil, the result
+// of NewConfig() is used.
 func (b *Broker) Open(conf *Config) error {
 	if conf == nil {
 		conf = NewConfig()
@@ -96,8 +101,9 @@ func (b *Broker) Open(conf *Config) error {
 	return nil
 }
 
-// Connected returns true if the broker is connected and false otherwise. If the broker is not
-// connected but it had tried to connect, the error from that connection attempt is also returned.
+// Connected returns true if the broker is connected and false
+// otherwise. If the broker is not connected but it had tried to
+// connect, the error from that connection attempt is also returned.
 func (b *Broker) Connected() (bool, error) {
 	b.lock.Lock()
 	defer b.lock.Unlock()
@@ -134,12 +140,14 @@ func (b *Broker) Close() error {
 	return err
 }
 
-// ID returns the broker ID retrieved from Kafka's metadata, or -1 if that is not known.
+// ID returns the broker ID retrieved from Kafka's metadata, or -1 if
+// that is not known.
 func (b *Broker) ID() int32 {
 	return b.id
 }
 
-// Addr returns the broker address as either retrieved from Kafka's metadata or passed to NewBroker.
+// Addr returns the broker address as either retrieved from Kafka's
+// metadata or passed to NewBroker.
 func (b *Broker) Addr() string {
 	return b.addr
 }
@@ -358,7 +366,8 @@ func (b *Broker) responseReceiver() {
 		}
 		if decodedHeader.correlationID != response.correlationID {
 			// TODO if decoded ID < cur ID, discard until we catch up
-			// TODO if decoded ID > cur ID, save it so when cur ID catches up we have a response
+			// TODO if decoded ID > cur ID, save it so when cur ID catches up
+			// we have a response
 			response.errors <- PacketDecodingError{fmt.Sprintf("CorrelationID didn't match, wanted %d, got %d", response.correlationID, decodedHeader.correlationID)}
 			continue
 		}
@@ -366,9 +375,12 @@ func (b *Broker) responseReceiver() {
 		buf := make([]byte, decodedHeader.length-4)
 		_, err = io.ReadFull(b.conn, buf)
 		if err != nil {
-			// XXX: the above ReadFull call inherits the same ReadDeadline set at the top of this loop, so it may
-			// fail with a timeout error. If this happens, our connection is permanently toast since we will no longer
-			// be aligned correctly on the stream (we'll be reading garbage Kafka headers from the middle of data).
+			// XXX: the above ReadFull call inherits the same
+			// ReadDeadline set at the top of this loop, so it may
+			// fail with a timeout error. If this happens, our
+			// connection is permanently toast since we will no longer
+			// be aligned correctly on the stream (we'll be reading
+			// garbage Kafka headers from the middle of data).
 			// Can we/should we fail harder in that case?
 			response.errors <- err
 			continue

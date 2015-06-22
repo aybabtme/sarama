@@ -307,9 +307,12 @@ func TestAsyncProducerBrokerBounce(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		producer.Input() <- &ProducerMessage{Topic: "my_topic", Key: nil, Value: StringEncoder(TestMessage)}
 	}
-	leader.Close()                               // producer should get EOF
-	leader = newMockBrokerAddr(t, 2, leaderAddr) // start it up again right away for giggles
-	seedBroker.Returns(metadataResponse)         // tell it to go to broker 2 again
+	// producer should get EOF
+	leader.Close()
+	// start it up again right away for giggles
+	leader = newMockBrokerAddr(t, 2, leaderAddr)
+	// tell it to go to broker 2 again
+	seedBroker.Returns(metadataResponse)
 
 	prodSuccess := new(ProduceResponse)
 	prodSuccess.AddTopicPartition("my_topic", 0, ErrNoError)
@@ -344,9 +347,12 @@ func TestAsyncProducerBrokerBounceWithStaleMetadata(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		producer.Input() <- &ProducerMessage{Topic: "my_topic", Key: nil, Value: StringEncoder(TestMessage)}
 	}
-	leader1.Close()                     // producer should get EOF
-	seedBroker.Returns(metadataLeader1) // tell it to go to leader1 again even though it's still down
-	seedBroker.Returns(metadataLeader1) // tell it to go to leader1 again even though it's still down
+	// producer should get EOF
+	leader1.Close()
+	// tell it to go to leader1 again even though it's still down
+	seedBroker.Returns(metadataLeader1)
+	// tell it to go to leader1 again even though it's still down
+	seedBroker.Returns(metadataLeader1)
 
 	// ok fine, tell it to go to leader2 finally
 	metadataLeader2 := new(MetadataResponse)
@@ -511,7 +517,8 @@ func TestAsyncProducerRetryWithReferenceOpen(t *testing.T) {
 	leader.Returns(prodSuccess)
 	expectResults(t, producer, 1, 0)
 
-	// reboot the broker (the producer will get EOF on its existing connection)
+	// reboot the broker (the producer will get EOF on its existing
+	// connection)
 	leader.Close()
 	leader = newMockBrokerAddr(t, 2, leaderAddr)
 
@@ -617,7 +624,8 @@ func TestAsyncProducerRetryShutdown(t *testing.T) {
 		producer.Input() <- &ProducerMessage{Topic: "my_topic", Key: nil, Value: StringEncoder(TestMessage)}
 	}
 	producer.AsyncClose()
-	time.Sleep(5 * time.Millisecond) // let the shutdown goroutine kick in
+	// let the shutdown goroutine kick in
+	time.Sleep(5 * time.Millisecond)
 
 	producer.Input() <- &ProducerMessage{Topic: "FOO"}
 	if err := <-producer.Errors(); err.Err != ErrShuttingDown {
@@ -725,7 +733,8 @@ ProducerLoop:
 			enqueued++
 
 		case <-signals:
-			producer.AsyncClose() // Trigger a shutdown of the producer.
+			// Trigger a shutdown of the producer.
+			producer.AsyncClose()
 			break ProducerLoop
 		}
 	}

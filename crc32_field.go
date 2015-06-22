@@ -5,7 +5,8 @@ import (
 	"hash/crc32"
 )
 
-// crc32Field implements the pushEncoder and pushDecoder interfaces for calculating CRC32s.
+// crc32Field implements the pushEncoder and pushDecoder interfaces
+// for calculating CRC32s.
 type crc32Field struct {
 	startOffset int
 }

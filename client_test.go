@@ -272,8 +272,8 @@ func TestClientReceivingUnknownTopic(t *testing.T) {
 		t.Error("ErrUnknownTopicOrPartition expected, got", err)
 	}
 
-	// If we are asking for the leader of a partition of the non-existing topic.
-	// we will request metadata again.
+	// If we are asking for the leader of a partition of the non-existing
+	// topic. we will request metadata again.
 	seedBroker.Returns(metadataUnknownTopic)
 	seedBroker.Returns(metadataUnknownTopic)
 
@@ -312,9 +312,9 @@ func TestClientReceivingPartialMetadata(t *testing.T) {
 		t.Error("ErrLeaderNotAvailable should not make RefreshMetadata respond with an error")
 	}
 
-	// Even though the metadata was incomplete, we should be able to get the leader of a partition
-	// for which we did get a useful response, without doing additional requests.
-
+	// Even though the metadata was incomplete, we should be able to get
+	// the leader of a partition for which we did get a useful response,
+	// without doing additional requests.
 	partition0Leader, err := client.Leader("new_topic", 0)
 	if err != nil {
 		t.Error(err)
@@ -322,12 +322,12 @@ func TestClientReceivingPartialMetadata(t *testing.T) {
 		t.Error("Unexpected leader returned", partition0Leader.Addr())
 	}
 
-	// If we are asking for the leader of a partition that didn't have a leader before,
-	// we will do another metadata request.
-
+	// If we are asking for the leader of a partition that didn't have a
+	// leader before, we will do another metadata request.
 	seedBroker.Returns(metadataPartial)
 
-	// Still no leader for the partition, so asking for it should return an error.
+	// Still no leader for the partition, so asking for it should return
+	// an error.
 	_, err = client.Leader("new_topic", 1)
 	if err != ErrLeaderNotAvailable {
 		t.Error("Expected ErrLeaderNotAvailable, got", err)
@@ -397,7 +397,8 @@ func TestClientResurrectDeadSeeds(t *testing.T) {
 	addr2 := seed2.Addr()
 	addr3 := seed3.Addr()
 
-	// Overwrite the seed brokers with a fixed ordering to make this test deterministic.
+	// Overwrite the seed brokers with a fixed ordering to make this test
+	// deterministic.
 	safeClose(t, client.seedBrokers[0])
 	client.seedBrokers = []*Broker{NewBroker(addr1), NewBroker(addr2), NewBroker(addr3)}
 	client.deadSeeds = []*Broker{}
@@ -584,6 +585,7 @@ func TestClientAutorefreshShutdownRace(t *testing.T) {
 	done := make(chan none)
 	go func() {
 		// Close the client
+
 		if err := client.Close(); err != nil {
 			t.Fatal(err)
 		}
@@ -603,6 +605,7 @@ func TestClientAutorefreshShutdownRace(t *testing.T) {
 
 	seedBroker.Close()
 
-	// give the update time to happen so we get a panic if it's still running (which it shouldn't)
+	// give the update time to happen so we get a panic if it's still
+	// running (which it shouldn't)
 	time.Sleep(10 * time.Millisecond)
 }

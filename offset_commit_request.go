@@ -1,8 +1,9 @@
 package sarama
 
-// ReceiveTime is a special value for the timestamp field of Offset Commit Requests which
-// tells the broker to set the timestamp to the time at which the request was received.
-// The timestamp is only used if message version 1 is used, which requires kafka 0.8.2.
+// ReceiveTime is a special value for the timestamp field of Offset
+// Commit Requests which tells the broker to set the timestamp to the
+// time at which the request was received. The timestamp is only used
+// if message version 1 is used, which requires kafka 0.8.2.
 const ReceiveTime int64 = -1
 
 type offsetCommitRequestBlock struct {

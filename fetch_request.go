@@ -18,7 +18,8 @@ type FetchRequest struct {
 }
 
 func (f *FetchRequest) encode(pe packetEncoder) (err error) {
-	pe.putInt32(-1) // replica ID is always -1 for clients
+	// replica ID is always -1 for clients
+	pe.putInt32(-1)
 	pe.putInt32(f.MaxWaitTime)
 	pe.putInt32(f.MinBytes)
 	err = pe.putArrayLength(len(f.blocks))

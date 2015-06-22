@@ -95,7 +95,8 @@ func TestConsumerOffsetNewest(t *testing.T) {
 
 	msg := <-consumer.Messages()
 
-	// we deliver one message, so it should be one higher than we return in the OffsetResponse
+	// we deliver one message, so it should be one higher than we return
+	// in the OffsetResponse
 	if msg.Offset != 10 {
 		t.Error("Latest message offset not fetched correctly:", msg.Offset)
 	}
@@ -108,8 +109,10 @@ func TestConsumerOffsetNewest(t *testing.T) {
 	safeClose(t, consumer)
 	safeClose(t, master)
 
-	// We deliver one message, so it should be one higher than we return in the OffsetResponse.
-	// This way it is set correctly for the next FetchRequest.
+	// We deliver one message, so it should be one higher than we return
+	// in the OffsetResponse. This way it is set correctly for the next
+	// FetchRequest.
+
 	if consumer.(*partitionConsumer).offset != 11 {
 		t.Error("Latest offset not fetched correctly:", consumer.(*partitionConsumer).offset)
 	}
@@ -156,9 +159,10 @@ func TestConsumerShutsDownOutOfRange(t *testing.T) {
 }
 
 func TestConsumerFunnyOffsets(t *testing.T) {
-	// for topics that are compressed and/or compacted (different things!) we have to be
-	// able to handle receiving offsets that are non-sequential (though still strictly increasing) and
-	// possibly starting prior to the actual value we requested
+	// for topics that are compressed and/or compacted (different
+	// things!) we have to be able to handle receiving offsets that are
+	// non-sequential (though still strictly increasing) and possibly
+	// starting prior to the actual value we requested
 	seedBroker := newMockBroker(t, 1)
 	leader := newMockBroker(t, 2)
 
@@ -245,7 +249,8 @@ func TestConsumerRebalancingMultiplePartitions(t *testing.T) {
 	offsetResponseOldest1.AddTopicPartition("my_topic", 1, 0)
 	leader1.Returns(offsetResponseOldest1)
 
-	// we expect to end up (eventually) consuming exactly ten messages on each partition
+	// we expect to end up (eventually) consuming exactly ten messages on
+	// each partition
 	var wg sync.WaitGroup
 	for i := int32(0); i < 2; i++ {
 		consumer, err := master.ConsumePartition("my_topic", i, 0)
@@ -292,7 +297,8 @@ func TestConsumerRebalancingMultiplePartitions(t *testing.T) {
 	metadataResponse.AddTopicPartition("my_topic", 0, leader1.BrokerID(), nil, nil, ErrNoError)
 	metadataResponse.AddTopicPartition("my_topic", 1, leader1.BrokerID(), nil, nil, ErrNoError)
 	seedBroker.Returns(metadataResponse)
-	time.Sleep(50 * time.Millisecond) // dumbest way to force a particular response ordering
+	// dumbest way to force a particular response ordering
+	time.Sleep(50 * time.Millisecond)
 
 	// leader1 provides five messages on partition 1
 	fetchResponse = new(FetchResponse)
@@ -309,7 +315,8 @@ func TestConsumerRebalancingMultiplePartitions(t *testing.T) {
 	}
 	leader1.Returns(fetchResponse)
 
-	// leader1 provides three more messages on partition0, says no longer leader of partition1
+	// leader1 provides three more messages on partition0, says no longer
+	// leader of partition1
 	fetchResponse = new(FetchResponse)
 	for i := 0; i < 3; i++ {
 		fetchResponse.AddMessage("my_topic", 0, nil, ByteEncoder([]byte{0x00, 0x0E}), int64(i+7))
@@ -322,14 +329,16 @@ func TestConsumerRebalancingMultiplePartitions(t *testing.T) {
 	metadataResponse.AddTopicPartition("my_topic", 0, leader1.BrokerID(), nil, nil, ErrNoError)
 	metadataResponse.AddTopicPartition("my_topic", 1, leader0.BrokerID(), nil, nil, ErrNoError)
 	seedBroker.Returns(metadataResponse)
-	time.Sleep(50 * time.Millisecond) // dumbest way to force a particular response ordering
+	// dumbest way to force a particular response ordering
+	time.Sleep(50 * time.Millisecond)
 
 	// leader0 provides two messages on partition 1
 	fetchResponse = new(FetchResponse)
 	fetchResponse.AddMessage("my_topic", 1, nil, ByteEncoder([]byte{0x00, 0x0E}), int64(8))
 	fetchResponse.AddMessage("my_topic", 1, nil, ByteEncoder([]byte{0x00, 0x0E}), int64(9))
 	leader0.Returns(fetchResponse)
-	time.Sleep(50 * time.Millisecond) // dumbest way to force a particular response ordering
+	// dumbest way to force a particular response ordering
+	time.Sleep(50 * time.Millisecond)
 
 	leader1.Close()
 	leader0.Close()
@@ -446,7 +455,7 @@ func TestConsumerBounceWithReferenceOpen(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	//redirect partition 1 back to main leader
+	// redirect partition 1 back to main leader
 	fetchResponse := new(FetchResponse)
 	fetchResponse.AddError("my_topic", 1, ErrNotLeaderForPartition)
 	tmp.Returns(fetchResponse)
@@ -456,7 +465,8 @@ func TestConsumerBounceWithReferenceOpen(t *testing.T) {
 	seedBroker.Returns(metadataResponse)
 	time.Sleep(5 * time.Millisecond)
 
-	// now send one message to each partition to make sure everything is primed
+	// now send one message to each partition to make sure everything is
+	// primed
 	fetchResponse = new(FetchResponse)
 	fetchResponse.AddMessage("my_topic", 0, nil, ByteEncoder([]byte{0x00, 0x0E}), int64(0))
 	fetchResponse.AddError("my_topic", 1, ErrNoError)
@@ -565,8 +575,8 @@ func TestConsumerOffsetOutOfRange(t *testing.T) {
 
 // This example has the simplest use case of the consumer. It simply
 // iterates over the messages channel using a for/range loop. Because
-// a producer never stopsunless requested, a signal handler is registered
-// so we can trigger a clean shutdown of the consumer.
+// a producer never stopsunless requested, a signal handler is
+// registered so we can trigger a clean shutdown of the consumer.
 func ExampleConsumer_for_loop() {
 	master, err := NewConsumer([]string{"localhost:9092"}, nil)
 	if err != nil {
@@ -584,8 +594,9 @@ func ExampleConsumer_for_loop() {
 	}
 
 	go func() {
-		// By default, the consumer will always keep going, unless we tell it to stop.
-		// In this case, we capture the SIGINT signal so we can tell the consumer to stop
+		// By default, the consumer will always keep going, unless we
+		// tell it to stop. In this case, we capture the SIGINT signal
+		// so we can tell the consumer to stop
 		signals := make(chan os.Signal, 1)
 		signal.Notify(signals, os.Interrupt)
 		<-signals
@@ -604,7 +615,8 @@ func ExampleConsumer_for_loop() {
 // dealing with the different channels.
 func ExampleConsumer_select() {
 	config := NewConfig()
-	config.Consumer.Return.Errors = true // Handle errors manually instead of letting Sarama log them.
+	// Handle errors manually instead of letting Sarama log them.
+	config.Consumer.Return.Errors = true
 
 	master, err := NewConsumer([]string{"localhost:9092"}, config)
 	if err != nil {
@@ -650,7 +662,8 @@ consumerLoop:
 // to read from the Messages and Errors channels.
 func ExampleConsumer_goroutines() {
 	config := NewConfig()
-	config.Consumer.Return.Errors = true // Handle errors manually instead of letting Sarama log them.
+	// Handle errors manually instead of letting Sarama log them.
+	config.Consumer.Return.Errors = true
 
 	master, err := NewConsumer([]string{"localhost:9092"}, config)
 	if err != nil {

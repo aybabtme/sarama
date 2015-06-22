@@ -3,7 +3,8 @@ package sarama
 import "fmt"
 
 // Encoder is the interface that wraps the basic Encode method.
-// Anything implementing Encoder can be turned into bytes using Kafka's encoding rules.
+// Anything implementing Encoder can be turned into bytes using
+// Kafka's encoding rules.
 type encoder interface {
 	encode(pe packetEncoder) error
 }
@@ -36,13 +37,14 @@ func encode(in encoder) ([]byte, error) {
 }
 
 // Decoder is the interface that wraps the basic Decode method.
-// Anything implementing Decoder can be extracted from bytes using Kafka's encoding rules.
+// Anything implementing Decoder can be extracted from bytes using
+// Kafka's encoding rules.
 type decoder interface {
 	decode(pd packetDecoder) error
 }
 
-// Decode takes bytes and a Decoder and fills the fields of the decoder from the bytes,
-// interpreted using Kafka's encoding rules.
+// Decode takes bytes and a Decoder and fills the fields of the
+// decoder from the bytes, interpreted using Kafka's encoding rules.
 func decode(buf []byte, in decoder) error {
 	if buf == nil {
 		return nil

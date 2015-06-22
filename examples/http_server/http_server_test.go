@@ -48,7 +48,8 @@ func TestCollectSuccessfully(t *testing.T) {
 }
 
 // Now, let's see if we handle the case of not being able to produce
-// to the data collector properly. In this case we should return a 500 status.
+// to the data collector properly. In this case we should return a 500
+// status.
 func TestCollectionFailure(t *testing.T) {
 	dataCollectorMock := mocks.NewSyncProducer(t, nil)
 	dataCollectorMock.ExpectSendMessageAndFail(sarama.ErrRequestTimedOut)

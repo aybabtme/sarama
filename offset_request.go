@@ -16,7 +16,8 @@ type OffsetRequest struct {
 }
 
 func (r *OffsetRequest) encode(pe packetEncoder) error {
-	pe.putInt32(-1) // replica ID is always -1 for clients
+	// replica ID is always -1 for clients
+	pe.putInt32(-1)
 	err := pe.putArrayLength(len(r.blocks))
 	if err != nil {
 		return err

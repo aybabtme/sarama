@@ -5,10 +5,10 @@ import (
 	"sync"
 )
 
-// SyncProducer implements sarama's SyncProducer interface for testing purposes.
-// Before you can use it, you have to set expectations on the mock SyncProducer
-// to tell it how to handle calls to SendMessage, so you can easily test success
-// and failure scenarios.
+// SyncProducer implements sarama's SyncProducer interface for testing
+// purposes. Before you can use it, you have to set expectations on
+// the mock SyncProducer to tell it how to handle calls to
+// SendMessage, so you can easily test success and failure scenarios.
 type SyncProducer struct {
 	l            sync.Mutex
 	t            ErrorReporter
@@ -16,10 +16,11 @@ type SyncProducer struct {
 	lastOffset   int64
 }
 
-// NewSyncProducer instantiates a new SyncProducer mock. The t argument should
-// be the *testing.T instance of your test method. An error will be written to it if
-// an expectation is violated. The config argument is currently unused, but is
-// maintained to be compatible with the async Producer.
+// NewSyncProducer instantiates a new SyncProducer mock. The t
+// argument should be the *testing.T instance of your test method. An
+// error will be written to it if an expectation is violated. The
+// config argument is currently unused, but is maintained to be
+// compatible with the async Producer.
 func NewSyncProducer(t ErrorReporter, config *sarama.Config) *SyncProducer {
 	return &SyncProducer{
 		t:            t,
@@ -31,10 +32,12 @@ func NewSyncProducer(t ErrorReporter, config *sarama.Config) *SyncProducer {
 // Implement SyncProducer interface
 ////////////////////////////////////////////////
 
-// SendMessage corresponds with the SendMessage method of sarama's SyncProducer implementation.
-// You have to set expectations on the mock producer before calling SendMessage, so it knows
-// how to handle them. If there is no more remaining expectations when SendMessage is called,
-// the mock producer will write an error to the test state object.
+// SendMessage corresponds with the SendMessage method of sarama's
+// SyncProducer implementation. You have to set expectations on the
+// mock producer before calling SendMessage, so it knows how to handle
+// them. If there is no more remaining expectations when SendMessage
+// is called, the mock producer will write an error to the test state
+// object.
 func (sp *SyncProducer) SendMessage(msg *sarama.ProducerMessage) (partition int32, offset int64, err error) {
 	sp.l.Lock()
 	defer sp.l.Unlock()
@@ -56,9 +59,10 @@ func (sp *SyncProducer) SendMessage(msg *sarama.ProducerMessage) (partition int3
 	}
 }
 
-// Close corresponds with the Close method of sarama's SyncProducer implementation.
-// By closing a mock syncproducer, you also tell it that no more SendMessage calls will follow,
-// so it will write an error to the test state if there's any remaining expectations.
+// Close corresponds with the Close method of sarama's SyncProducer
+// implementation. By closing a mock syncproducer, you also tell it
+// that no more SendMessage calls will follow, so it will write an
+// error to the test state if there's any remaining expectations.
 func (sp *SyncProducer) Close() error {
 	sp.l.Lock()
 	defer sp.l.Unlock()
@@ -74,8 +78,9 @@ func (sp *SyncProducer) Close() error {
 // Setting expectations
 ////////////////////////////////////////////////
 
-// ExpectSendMessageAndSucceed sets an expectation on the mock producer that SendMessage will be
-// called. The mock producer will handle the message as if it produced successfully, i.e. by
+// ExpectSendMessageAndSucceed sets an expectation on the mock
+// producer that SendMessage will be called. The mock producer will
+// handle the message as if it produced successfully, i.e. by
 // returning a valid partition, and offset, and a nil error.
 func (sp *SyncProducer) ExpectSendMessageAndSucceed() {
 	sp.l.Lock()
@@ -83,9 +88,10 @@ func (sp *SyncProducer) ExpectSendMessageAndSucceed() {
 	sp.expectations = append(sp.expectations, &producerExpectation{Result: errProduceSuccess})
 }
 
-// ExpectSendMessageAndFail sets an expectation on the mock producer that SendMessage will be
-// called. The mock producer will handle the message as if it failed to produce
-// successfully, i.e. by returning the provided error.
+// ExpectSendMessageAndFail sets an expectation on the mock producer
+// that SendMessage will be called. The mock producer will handle the
+// message as if it failed to produce successfully, i.e. by returning
+// the provided error.
 func (sp *SyncProducer) ExpectSendMessageAndFail(err error) {
 	sp.l.Lock()
 	defer sp.l.Unlock()
